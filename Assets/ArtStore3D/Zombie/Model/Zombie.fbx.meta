@@ -1,7 +1,14 @@
 fileFormatVersion: 2
 guid: 3ea946212e7416c4f8a3e7a404166265
+AssetOrigin:
+  serializedVersion: 1
+  productId: 232270
+  packageName: Zombie 1
+  packageVersion: 1.0
+  assetPath: Assets/ArtStore3D/Zombie/Model/Zombie.fbx
+  uploadId: 839242
 ModelImporter:
-  serializedVersion: 21202
+  serializedVersion: 24200
   internalIDToNameTable: []
   externalObjects:
   - first:
@@ -21,8 +28,6 @@ ModelImporter:
     optimizeGameObjects: 0
     removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -45,6 +50,7 @@ ModelImporter:
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
+    importPhysicalCameras: 1
     importVisibility: 0
     importBlendShapes: 0
     importCameras: 0
@@ -62,6 +68,9 @@ ModelImporter:
     maxBonesPerVertex: 4
     minBoneWeight: 0.001
     optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
     meshOptimizationFlags: -1
     indexFormat: 0
     secondaryUVAngleDistortion: 8
@@ -72,6 +81,7 @@ ModelImporter:
     secondaryUVMinObjectScale: 1
     secondaryUVPackMargin: 4
     useFileScale: 1
+    strictVertexDataChecks: 0
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0
@@ -81,7 +91,7 @@ ModelImporter:
     blendShapeNormalImportMode: 1
     normalSmoothingSource: 0
   referencedClips: []
-  importAnimation: 0
+  importAnimation: 1
   humanDescription:
     serializedVersion: 3
     human:
@@ -615,8 +625,7 @@ ModelImporter:
     - name: Zombie_LeftHandIndex4
       parentName: Zombie_LeftHandIndex3
       position: {x: -0.017492907, y: 0.0000043181253, z: 0.0000000051387192}
-      rotation: {x: 0.00000044429487, y: -0.00000002384638, z: 0.000000011175884,
-        w: 1}
+      rotation: {x: 0.00000044429487, y: -0.00000002384638, z: 0.000000011175884, w: 1}
       scale: {x: 0.99999994, y: 1.0000001, z: 0.99999994}
     - name: Zombie_LeftHandMiddle1
       parentName: Zombie_LeftHand
@@ -631,8 +640,7 @@ ModelImporter:
     - name: Zombie_LeftHandMiddle3
       parentName: Zombie_LeftHandMiddle2
       position: {x: -0.022752319, y: -0.0000017865265, z: -0.00000029931346}
-      rotation: {x: 0.00000020255847, y: -0.000000010849797, z: -0.000000044703484,
-        w: 1}
+      rotation: {x: 0.00000020255847, y: -0.000000010849797, z: -0.000000044703484, w: 1}
       scale: {x: 0.9999999, y: 0.9999996, z: 0.99999934}
     - name: Zombie_LeftHandMiddle4
       parentName: Zombie_LeftHandMiddle3
@@ -657,8 +665,7 @@ ModelImporter:
     - name: Zombie_LeftHandPinky4
       parentName: Zombie_LeftHandPinky3
       position: {x: -0.016687596, y: 0.0000016001787, z: -0.0000003607809}
-      rotation: {x: -0.0000015334225, y: -0.000000007450459, z: -0.000000089035765,
-        w: 1}
+      rotation: {x: -0.0000015334225, y: -0.000000007450459, z: -0.000000089035765, w: 1}
       scale: {x: 0.99999994, y: 1.0000006, z: 1.0000004}
     - name: Zombie_LeftHandRing1
       parentName: Zombie_LeftHand
@@ -673,14 +680,12 @@ ModelImporter:
     - name: Zombie_LeftHandRing3
       parentName: Zombie_LeftHandRing2
       position: {x: -0.02304531, y: 0.000000041406654, z: -0.00000056689026}
-      rotation: {x: 0.0000001837502, y: -0.000000041988013, z: 0.000000037252907,
-        w: 1}
+      rotation: {x: 0.0000001837502, y: -0.000000041988013, z: 0.000000037252907, w: 1}
       scale: {x: 1, y: 0.9999998, z: 0.9999997}
     - name: Zombie_LeftHandRing4
       parentName: Zombie_LeftHandRing3
       position: {x: -0.019232573, y: -0.0000013737316, z: -0.0000009664984}
-      rotation: {x: 0.00000039138365, y: -0.000000021762832, z: 0.000000037252878,
-        w: 1}
+      rotation: {x: 0.00000039138365, y: -0.000000021762832, z: 0.000000037252878, w: 1}
       scale: {x: 1, y: 1, z: 1.0000004}
     - name: Zombie_LeftHandThumb1
       parentName: Zombie_LeftHand
@@ -825,8 +830,7 @@ ModelImporter:
     - name: Zombie_RightHandThumb3
       parentName: Zombie_RightHandThumb2
       position: {x: 0.025415892, y: 9.2005387e-10, z: 0.00088820315}
-      rotation: {x: -0.00000002980246, y: -0.000000011175714, z: -0.0000018738208,
-        w: 1}
+      rotation: {x: -0.00000002980246, y: -0.000000011175714, z: -0.0000018738208, w: 1}
       scale: {x: 1.0000002, y: 1.0000006, z: 1.0000001}
     - name: Zombie_RightHandThumb4
       parentName: Zombie_RightHandThumb3
@@ -851,14 +855,9 @@ ModelImporter:
   humanoidOversampling: 1
   avatarSetup: 1
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 0
+  remapMaterialsIfMaterialImportModeIsNone: 1
   additionalBone: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 232270
-  packageName: Zombie 1
-  packageVersion: 1.0
-  assetPath: Assets/ArtStore3D/Zombie/Model/Zombie.fbx
-  uploadId: 839242
