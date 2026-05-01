@@ -164,7 +164,7 @@ public class CyberMonsterAI : MonoBehaviour
         {
             state = State.Chase;
             SetAgentSpeed(runSpeed);
-            anim.SetTrigger("Attack");
+            PlayAnim(ANIM_RUN);
             return;
         }
 
