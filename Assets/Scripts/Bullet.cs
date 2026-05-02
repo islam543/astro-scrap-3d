@@ -11,6 +11,7 @@ public class Bullet : MonoBehaviour
     public float speed    = 20f;
     public float lifetime = 4f;
     public int   damage   = 50;
+    public bool  damageOnHit = true;
 
     private Vector3 prevPosition;
     private bool    hasHit = false;
@@ -41,16 +42,19 @@ public class Bullet : MonoBehaviour
         if (dist > 0f && Physics.Raycast(prevPosition, dir.normalized, out RaycastHit hit, dist + 0.05f))
         {
             // Don't hit triggers or the player
-            if (!hit.collider.isTrigger && !hit.collider.CompareTag("Player"))
+            if (!hit.collider.isTrigger && !IsPlayerCollider(hit.collider))
             {
-                // Check for enemy health
-                ZombieHealth zh = hit.collider.GetComponentInParent<ZombieHealth>();
-                if (zh != null) zh.TakeDamage(damage);
+                if (damageOnHit && damage > 0)
+                {
+                    // Check for enemy health
+                    ZombieHealth zh = hit.collider.GetComponentInParent<ZombieHealth>();
+                    if (zh != null) zh.TakeDamage(damage);
 
-                CyberMonsterHealth ch = hit.collider.GetComponentInParent<CyberMonsterHealth>();
-                if (ch != null) ch.TakeDamage(damage);
+                    CyberMonsterHealth ch = hit.collider.GetComponentInParent<CyberMonsterHealth>();
+                    if (ch != null) ch.TakeDamage(damage);
 
-                Debug.Log($"[Bullet] Hit: {hit.collider.gameObject.name}");
+                    Debug.Log($"[Bullet] Hit: {hit.collider.gameObject.name}");
+                }
 
                 // Snap bullet to hit point and destroy
                 transform.position = hit.point;
@@ -61,5 +65,10 @@ public class Bullet : MonoBehaviour
         }
 
         prevPosition = transform.position;
+    }
+
+    bool IsPlayerCollider(Collider col)
+    {
+        return col.CompareTag("Player") || col.GetComponentInParent<PlayerHealth>() != null;
     }
 }
