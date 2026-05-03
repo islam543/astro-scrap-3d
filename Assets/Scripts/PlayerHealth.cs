@@ -8,9 +8,16 @@ public class PlayerHealth : MonoBehaviour
     private bool isDead = false;
     private bool gameOverSent = false;
 
-    void Start()
+    public event System.Action<int, int> HealthChanged;
+
+    void Awake()
     {
         currentHealth = maxHealth;
+    }
+
+    void Start()
+    {
+        NotifyHealthChanged();
         Debug.Log($"[PlayerHealth] Ready. HP: {currentHealth}/{maxHealth}");
     }
 
@@ -21,6 +28,7 @@ public class PlayerHealth : MonoBehaviour
         currentHealth -= damage;
         currentHealth  = Mathf.Max(currentHealth, 0);
         Debug.Log($"[PlayerHealth] Took {damage} dmg. HP: {currentHealth}/{maxHealth}");
+        NotifyHealthChanged();
 
         if (currentHealth <= 0)
         {
@@ -49,5 +57,11 @@ public class PlayerHealth : MonoBehaviour
     }
 
     public int GetHealth() => currentHealth;
+    public int GetMaxHealth() => maxHealth;
     public bool IsDead() => isDead;
+
+    private void NotifyHealthChanged()
+    {
+        HealthChanged?.Invoke(currentHealth, maxHealth);
+    }
 }

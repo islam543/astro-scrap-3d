@@ -28,7 +28,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Start Flow")]
     public bool showStartScreenOnAwake = false;
-    public bool createRuntimeMenus = false;
+    public bool createRuntimeMenus = true;
     public bool startFirstRoundOnAwake = true;
     public string gameTitle = "Cyber Zombie Siege";
 
@@ -74,6 +74,8 @@ public class GameManager : MonoBehaviour
     private GameObject victoryPanel;
     private GameObject hudPanel;
     private Text hudText;
+    private Text playerHealthText;
+    private Text roundAnnouncementText;
     private Text weaponListText;
     private Text volumeValueText;
     private Text sensitivityValueText;
@@ -81,6 +83,7 @@ public class GameManager : MonoBehaviour
 
     private GameObject playerObject;
     private Transform playerTransform;
+    private PlayerHealth playerHealth;
     private Transform spawnedEnemiesRoot;
     private Transform spawnedZombiesParent;
     private Transform spawnedBossesParent;
@@ -90,6 +93,7 @@ public class GameManager : MonoBehaviour
     private bool isGameOver = false;
     private bool isVictory = false;
     private float sensitivitySetting = 1f;
+    private Coroutine roundAnnouncementCoroutine;
 
     public bool IsGameOver => isGameOver;
     public bool CanPlayerAct => phase == GamePhase.Playing && !isGameOver && !isVictory;
@@ -109,6 +113,7 @@ public class GameManager : MonoBehaviour
             RestoreReasonableLighting();
 
         FindPlayer();
+        SubscribeToPlayerHealth();
         CacheEnemyTemplates();
         EnsureSpawnedEnemyParents();
 
@@ -149,6 +154,8 @@ public class GameManager : MonoBehaviour
         SetPanel(instructionsPanel, false);
         SetPanel(victoryPanel, false);
         SetPanel(hudPanel, false);
+        if (roundAnnouncementText != null)
+            roundAnnouncementText.gameObject.SetActive(false);
 
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
@@ -261,10 +268,12 @@ public class GameManager : MonoBehaviour
     private void StartRound(int roundNumber)
     {
         StopAllCoroutines();
+        roundAnnouncementCoroutine = null;
         phase = GamePhase.Playing;
         currentRound = roundNumber;
         enemiesRemaining = 0;
         activeEnemies.Clear();
+        SetPanel(hudPanel, true);
 
         if (currentRound == 1)
         {
@@ -283,6 +292,7 @@ public class GameManager : MonoBehaviour
         }
 
         UpdateHud();
+        ShowRoundAnnouncement();
     }
 
     private void SpawnZombieRound(int zombieCount)
@@ -340,16 +350,20 @@ public class GameManager : MonoBehaviour
                 zombieAI.enabled = false;
         }
 
+        float zombieSpeed = GetZombieChaseSpeedForRound(currentRound);
+        int zombieDamage = GetZombieAttackDamageForRound(currentRound);
+
         foreach (ZombieAI zombieAI in enemy.GetComponentsInChildren<ZombieAI>(true))
         {
             zombieAI.playerTarget = playerTransform;
-            zombieAI.chaseSpeed = zombieMoveSpeed;
+            zombieAI.chaseSpeed = zombieSpeed;
+            zombieAI.attackDamage = zombieDamage;
         }
 
         foreach (NavMeshAgent agent in enemy.GetComponentsInChildren<NavMeshAgent>(true))
         {
             if (!isBoss)
-                agent.speed = zombieMoveSpeed;
+                agent.speed = zombieSpeed;
         }
 
         enemy.SetActive(true);
@@ -527,6 +541,49 @@ public class GameManager : MonoBehaviour
         playerTransform = playerObject != null ? playerObject.transform : null;
     }
 
+    private void SubscribeToPlayerHealth()
+    {
+        PlayerHealth foundHealth = FindPlayerHealth();
+        if (foundHealth == playerHealth) return;
+
+        if (playerHealth != null)
+            playerHealth.HealthChanged -= OnPlayerHealthChanged;
+
+        playerHealth = foundHealth;
+
+        if (playerHealth != null)
+            playerHealth.HealthChanged += OnPlayerHealthChanged;
+    }
+
+    private PlayerHealth FindPlayerHealth()
+    {
+        if (playerHealth != null)
+            return playerHealth;
+
+        if (playerObject == null)
+            FindPlayer();
+
+        if (playerObject == null)
+            return null;
+
+        PlayerHealth foundHealth = playerObject.GetComponent<PlayerHealth>();
+        if (foundHealth == null)
+            foundHealth = playerObject.GetComponentInChildren<PlayerHealth>();
+
+        return foundHealth;
+    }
+
+    private void OnPlayerHealthChanged(int currentHealth, int maxHealth)
+    {
+        UpdateHud();
+    }
+
+    private void OnDestroy()
+    {
+        if (playerHealth != null)
+            playerHealth.HealthChanged -= OnPlayerHealthChanged;
+    }
+
     private void SetGameplayPaused(bool paused)
     {
         Time.timeScale = paused ? 0f : 1f;
@@ -573,11 +630,22 @@ public class GameManager : MonoBehaviour
 
     private void UpdateHud()
     {
-        if (hudText == null) return;
+        SubscribeToPlayerHealth();
 
-        string roundName = currentRound == 3 ? "Round 3: Cyber Monsters 2" : $"Round {currentRound}: Zombies";
-        string targetName = currentRound == 3 ? "Boss health target" : "Zombies left";
-        hudText.text = $"{roundName}\n{targetName}: {enemiesRemaining}";
+        if (hudText != null)
+        {
+            string roundName = currentRound == 3 ? "Round 3: Cyber Monsters 2" : $"Round {currentRound}: Zombies";
+            string targetName = currentRound == 3 ? "Boss health target" : "Zombies left";
+            hudText.text = $"{roundName}\n{targetName}: {enemiesRemaining}";
+        }
+
+        if (playerHealthText != null)
+        {
+            PlayerHealth health = FindPlayerHealth();
+            playerHealthText.text = health != null
+                ? $"HP: {health.GetHealth()}/{health.GetMaxHealth()}"
+                : "HP: --/--";
+        }
     }
 
     private void BuildRuntimeUi()
@@ -600,6 +668,7 @@ public class GameManager : MonoBehaviour
         instructionsPanel = CreateInstructionsPanel(runtimeCanvas.transform);
         victoryPanel = CreateVictoryPanel(runtimeCanvas.transform);
         hudPanel = CreateHud(runtimeCanvas.transform);
+        roundAnnouncementText = CreateRoundAnnouncementText(runtimeCanvas.transform);
     }
 
     private void HideRuntimeUi()
@@ -721,14 +790,69 @@ public class GameManager : MonoBehaviour
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
         rect.anchoredPosition = new Vector2(24f, -24f);
-        rect.sizeDelta = new Vector2(360f, 92f);
+        rect.sizeDelta = new Vector2(360f, 124f);
 
         Image image = panel.AddComponent<Image>();
         image.color = new Color(0.02f, 0.025f, 0.025f, 0.72f);
 
         hudText = CreateText("RoundHudText", rect, "", 22, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white, new Vector2(328f, 68f));
-        hudText.rectTransform.anchoredPosition = Vector2.zero;
+        hudText.rectTransform.anchorMin = new Vector2(0f, 1f);
+        hudText.rectTransform.anchorMax = new Vector2(0f, 1f);
+        hudText.rectTransform.pivot = new Vector2(0f, 1f);
+        hudText.rectTransform.anchoredPosition = new Vector2(16f, -12f);
+
+        playerHealthText = CreateText("PlayerHealthText", rect, "HP: --/--", 20, FontStyle.Bold, TextAnchor.MiddleLeft, new Color(1f, 0.88f, 0.52f), new Vector2(328f, 34f));
+        playerHealthText.rectTransform.anchorMin = new Vector2(0f, 1f);
+        playerHealthText.rectTransform.anchorMax = new Vector2(0f, 1f);
+        playerHealthText.rectTransform.pivot = new Vector2(0f, 1f);
+        playerHealthText.rectTransform.anchoredPosition = new Vector2(16f, -82f);
         return panel;
+    }
+
+    private Text CreateRoundAnnouncementText(Transform parent)
+    {
+        Text text = CreateText("RoundAnnouncementText", parent, "", 54, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white, new Vector2(560f, 90f));
+        RectTransform rect = text.rectTransform;
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -92f);
+        text.gameObject.SetActive(false);
+        return text;
+    }
+
+    private void ShowRoundAnnouncement()
+    {
+        if (roundAnnouncementText == null) return;
+
+        if (roundAnnouncementCoroutine != null)
+            StopCoroutine(roundAnnouncementCoroutine);
+
+        string message = currentRound == 3 ? "BOSS ROUND" : $"ROUND {currentRound}";
+        roundAnnouncementCoroutine = StartCoroutine(ShowRoundAnnouncementRoutine(message));
+    }
+
+    private IEnumerator ShowRoundAnnouncementRoutine(string message)
+    {
+        roundAnnouncementText.text = message;
+        roundAnnouncementText.gameObject.SetActive(true);
+        yield return new WaitForSeconds(2f);
+        roundAnnouncementText.gameObject.SetActive(false);
+        roundAnnouncementCoroutine = null;
+    }
+
+    private float GetZombieChaseSpeedForRound(int roundNumber)
+    {
+        if (roundNumber == 2) return 2.2f;
+        if (roundNumber >= 3) return 2.8f;
+        return zombieMoveSpeed;
+    }
+
+    private int GetZombieAttackDamageForRound(int roundNumber)
+    {
+        if (roundNumber == 2) return 18;
+        if (roundNumber >= 3) return 25;
+        return 10;
     }
 
     private void CreateSliderRow(Transform parent, string label, float value, float min, float max, UnityAction<float> onChanged, out Text valueText)
@@ -886,10 +1010,7 @@ public class GameManager : MonoBehaviour
     {
         if (runtimeFont != null) return runtimeFont;
 
-        runtimeFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
-        if (runtimeFont == null)
-            runtimeFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
+        runtimeFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         return runtimeFont;
     }
 

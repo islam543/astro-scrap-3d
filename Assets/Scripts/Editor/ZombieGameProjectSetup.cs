@@ -81,7 +81,7 @@ public static class ZombieGameProjectSetup
         {
             SerializedObject serialized = new SerializedObject(gameManager);
             SetBool(serialized, "showStartScreenOnAwake", false);
-            SetBool(serialized, "createRuntimeMenus", false);
+            SetBool(serialized, "createRuntimeMenus", true);
             SetBool(serialized, "startFirstRoundOnAwake", true);
             SetBool(serialized, "autoFixSceneLighting", true);
             SetFloat(serialized, "minimumDirectionalLightIntensity", 1.35f);

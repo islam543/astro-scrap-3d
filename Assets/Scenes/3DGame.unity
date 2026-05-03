@@ -36931,9 +36931,9 @@ MonoBehaviour:
   gameOverPanel: {fileID: 2141000010}
   pauseOnGameOver: 1
   unlockCursorOnGameOver: 1
-  showStartScreenOnAwake: 1
+  showStartScreenOnAwake: 0
   createRuntimeMenus: 1
-  startFirstRoundOnAwake: 0
+  startFirstRoundOnAwake: 1
   gameTitle: Cyber Zombie Siege
   zombiePrefabs: []
   bossPrefab: {fileID: 0}
