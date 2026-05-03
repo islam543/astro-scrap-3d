@@ -18,6 +18,11 @@ public class ZombieAI : MonoBehaviour
     public float chaseSpeed  = 3f;
     public float rotateSpeed = 6f;
 
+    // ── Animator parameter names (must match your Animator Controller) ──
+    private static readonly int ParamSpeed  = Animator.StringToHash("Speed");
+    private static readonly int ParamAttack = Animator.StringToHash("Attack");
+    private static readonly int ParamDie    = Animator.StringToHash("Die");
+
     private NavMeshAgent  agent;
     private Animator      animator;
     private PlayerHealth  playerHealth;
@@ -27,8 +32,15 @@ public class ZombieAI : MonoBehaviour
     private bool          warnedMissingPlayer = false;
     private bool          warnedMissingPlayerHealth = false;
 
+    // Cached parameter existence flags so we never spam warnings
+    private bool hasParamSpeed;
+    private bool hasParamAttack;
+    private bool hasParamDie;
+
     enum State { Idle, Chase, Attack }
     private State state = State.Idle;
+
+    // ────────────────────────────────────────────────────────────────────
 
     void Start()
     {
@@ -40,7 +52,8 @@ public class ZombieAI : MonoBehaviour
         SetupMovement();
 
         attackTimer = 0f;
-        Debug.Log($"[ZombieAI] Ready. Detection={detectionRange}, AttackRange={attackRange}, Damage={attackDamage}, Cooldown={attackCooldown}");
+        Debug.Log($"[ZombieAI] Ready. Detection={detectionRange}, AttackRange={attackRange}, " +
+                  $"Damage={attackDamage}, Cooldown={attackCooldown}");
     }
 
     void Update()
@@ -61,6 +74,7 @@ public class ZombieAI : MonoBehaviour
         switch (state)
         {
             case State.Idle:
+                SetAnimSpeed(0f);
                 StopMoving();
                 if (dist <= detectionRange)
                 {
@@ -86,10 +100,12 @@ public class ZombieAI : MonoBehaviour
                     break;
                 }
 
+                SetAnimSpeed(1f);
                 ChasePlayer();
                 break;
 
             case State.Attack:
+                SetAnimSpeed(0f);
                 if (dist > attackRange)
                 {
                     Debug.Log($"[ZombieAI] Player moved out of attack range at {dist:0.0}m. Chasing again.");
@@ -101,6 +117,62 @@ public class ZombieAI : MonoBehaviour
                 break;
         }
     }
+
+    // ── Animator helpers ─────────────────────────────────────────────────
+
+    void SetupAnimator()
+    {
+        hasParamSpeed  = false;
+        hasParamAttack = false;
+        hasParamDie    = false;
+
+        if (animator == null)
+        {
+            Debug.Log("[ZombieAI] No Animator found. Zombie logic will still work without animations.");
+            return;
+        }
+
+        if (animator.runtimeAnimatorController == null)
+        {
+            Debug.LogWarning("[ZombieAI] Animator has no Runtime Animator Controller assigned. " +
+                             "Please create one and assign it to the Animator component.");
+            return;
+        }
+
+        foreach (AnimatorControllerParameter p in animator.parameters)
+        {
+            if (p.nameHash == ParamSpeed)  hasParamSpeed  = true;
+            if (p.nameHash == ParamAttack) hasParamAttack = true;
+            if (p.nameHash == ParamDie)    hasParamDie    = true;
+        }
+
+        Debug.Log($"[ZombieAI] Animator '{animator.runtimeAnimatorController.name}' found. " +
+                  $"Speed={hasParamSpeed}, Attack={hasParamAttack}, Die={hasParamDie}");
+
+        if (!hasParamSpeed || !hasParamAttack || !hasParamDie)
+            Debug.LogWarning("[ZombieAI] Animator is missing parameters. " +
+                             "Add Float 'Speed', Trigger 'Attack', Trigger 'Die' in the Animator Controller.");
+    }
+
+    void SetAnimSpeed(float value)
+    {
+        if (animator != null && hasParamSpeed)
+            animator.SetFloat(ParamSpeed, value);
+    }
+
+    void TriggerAttackAnim()
+    {
+        if (animator != null && hasParamAttack)
+            animator.SetTrigger(ParamAttack);
+    }
+
+    public void TriggerDeathAnim()
+    {
+        if (animator != null && hasParamDie)
+            animator.SetTrigger(ParamDie);
+    }
+
+    // ── AI methods ───────────────────────────────────────────────────────
 
     void FindPlayer()
     {
@@ -158,24 +230,6 @@ public class ZombieAI : MonoBehaviour
         }
     }
 
-    void SetupAnimator()
-    {
-        if (animator == null)
-        {
-            Debug.Log("[ZombieAI] No Animator found. Zombie logic will still work without animations.");
-            return;
-        }
-
-        if (animator.runtimeAnimatorController == null)
-        {
-            Debug.Log("[ZombieAI] Animator has no Runtime Animator Controller assigned. Animation hookup is disabled.");
-            return;
-        }
-
-        if (animator.parameters.Length == 0)
-            Debug.Log($"[ZombieAI] Animator Controller '{animator.runtimeAnimatorController.name}' has no parameters. Animation hookup is disabled.");
-    }
-
     void ChasePlayer()
     {
         if (playerTarget == null) return;
@@ -188,10 +242,10 @@ public class ZombieAI : MonoBehaviour
             return;
         }
 
+        // Fallback: simple transform movement
         Vector3 dir = playerTarget.position - transform.position;
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.001f) return;
-
         transform.position += dir.normalized * chaseSpeed * Time.deltaTime;
     }
 
@@ -204,6 +258,7 @@ public class ZombieAI : MonoBehaviour
         if (attackTimer > 0f) return;
 
         attackTimer = attackCooldown;
+        TriggerAttackAnim();
 
         if (playerHealth != null)
         {
@@ -239,18 +294,17 @@ public class ZombieAI : MonoBehaviour
         dir.y = 0;
         if (dir == Vector3.zero) return;
         Quaternion look = Quaternion.LookRotation(dir);
-        transform.rotation = Quaternion.Slerp(transform.rotation, look,
-                                               rotateSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, look, rotateSpeed * Time.deltaTime);
     }
 
     // Called by ZombieHealth on death
     public void OnDead()
     {
         if (isDead) return;
-
         isDead = true;
         StopMoving();
         if (agent != null) agent.enabled = false;
+        TriggerDeathAnim();
         Debug.Log("[ZombieAI] Dead. AI stopped.");
         this.enabled = false;
     }

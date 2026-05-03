@@ -9,7 +9,7 @@ public class ZombieHealth : MonoBehaviour
     private int currentHealth;
 
     [Header("Death")]
-    public float destroyDelay = 3f;
+    public float destroyDelay = 3f;   // seconds after death before GameObject is removed
 
     private bool isDead = false;
 
@@ -38,9 +38,11 @@ public class ZombieHealth : MonoBehaviour
 
         Debug.Log("[ZombieHealth] Zombie died!");
 
+        // Tell AI to stop, face player, and trigger death animation
         ZombieAI ai = GetComponent<ZombieAI>();
-        if (ai != null) ai.OnDead();
+        if (ai != null) ai.OnDead();   // OnDead() also calls TriggerDeathAnim()
 
+        // Disable all colliders so bullets / physics stop interacting
         foreach (Collider col in GetComponentsInChildren<Collider>())
             col.enabled = false;
 
@@ -48,6 +50,8 @@ public class ZombieHealth : MonoBehaviour
 
         Destroy(gameObject, destroyDelay);
     }
+
+    // ── GameManager notification (reflection-based, works with any method name) ──
 
     void NotifyGameManager()
     {
@@ -60,13 +64,14 @@ public class ZombieHealth : MonoBehaviour
 
         bool notified =
             TryInvokeGameManager(gameManager, "OnZombieKilled") ||
-            TryInvokeGameManager(gameManager, "ZombieKilled") ||
+            TryInvokeGameManager(gameManager, "ZombieKilled")   ||
             TryInvokeGameManager(gameManager, "OnEnemyKilled");
 
         if (notified)
             Debug.Log($"[ZombieHealth] Notified GameManager on {gameManager.gameObject.name}.");
         else
-            Debug.LogWarning("[ZombieHealth] GameManager found, but it has no OnZombieKilled, ZombieKilled, or OnEnemyKilled method.");
+            Debug.LogWarning("[ZombieHealth] GameManager found, but it has no OnZombieKilled, " +
+                             "ZombieKilled, or OnEnemyKilled method.");
     }
 
     MonoBehaviour FindGameManager()
@@ -74,22 +79,17 @@ public class ZombieHealth : MonoBehaviour
         GameObject namedObject = GameObject.Find("GameManager");
         if (namedObject != null)
         {
-            MonoBehaviour[] components = namedObject.GetComponents<MonoBehaviour>();
-            foreach (MonoBehaviour component in components)
-            {
+            foreach (MonoBehaviour component in namedObject.GetComponents<MonoBehaviour>())
                 if (component != null && component.GetType().Name == "GameManager")
                     return component;
-            }
 
-            if (components.Length > 0)
-                return components[0];
+            MonoBehaviour[] all = namedObject.GetComponents<MonoBehaviour>();
+            if (all.Length > 0) return all[0];
         }
 
         foreach (MonoBehaviour component in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
-        {
             if (component != null && component.GetType().Name == "GameManager")
                 return component;
-        }
 
         return null;
     }
@@ -100,12 +100,9 @@ public class ZombieHealth : MonoBehaviour
             methodName,
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
         );
-
-        if (method == null)
-            return false;
+        if (method == null) return false;
 
         ParameterInfo[] parameters = method.GetParameters();
-
         try
         {
             if (parameters.Length == 0)
@@ -113,22 +110,16 @@ public class ZombieHealth : MonoBehaviour
                 method.Invoke(gameManager, null);
                 return true;
             }
-
             if (parameters.Length == 1)
             {
-                Type parameterType = parameters[0].ParameterType;
-                object argument = null;
+                Type pt = parameters[0].ParameterType;
+                object arg = null;
+                if (pt.IsAssignableFrom(typeof(GameObject)))      arg = gameObject;
+                else if (pt.IsAssignableFrom(typeof(ZombieHealth))) arg = this;
+                else if (pt.IsAssignableFrom(typeof(Transform)))   arg = transform;
+                else return false;
 
-                if (parameterType.IsAssignableFrom(typeof(GameObject)))
-                    argument = gameObject;
-                else if (parameterType.IsAssignableFrom(typeof(ZombieHealth)))
-                    argument = this;
-                else if (parameterType.IsAssignableFrom(typeof(Transform)))
-                    argument = transform;
-                else
-                    return false;
-
-                method.Invoke(gameManager, new[] { argument });
+                method.Invoke(gameManager, new[] { arg });
                 return true;
             }
         }
@@ -137,10 +128,9 @@ public class ZombieHealth : MonoBehaviour
             Debug.LogWarning($"[ZombieHealth] GameManager notification failed: {e.Message}");
             return true;
         }
-
         return false;
     }
 
-    public int GetHealth() => currentHealth;
-    public bool IsDead() => isDead;
+    public int  GetHealth() => currentHealth;
+    public bool IsDead()    => isDead;
 }
