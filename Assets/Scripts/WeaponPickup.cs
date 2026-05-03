@@ -42,6 +42,7 @@ public class WeaponPickup : MonoBehaviour
     void Update()
     {
         if (pickedUp) return;
+        if (GameManager.Instance != null && !GameManager.Instance.CanPlayerAct) return;
 
         // Hover + spin
         float y = startPos.y + Mathf.Sin(Time.time * bobSpeed) * bobHeight;
@@ -73,6 +74,7 @@ public class WeaponPickup : MonoBehaviour
     void OnGUI()
     {
         if (!playerNear || pickedUp) return;
+        if (GameManager.Instance != null && !GameManager.Instance.CanPlayerAct) return;
         if (Camera.main == null) return;
 
         Vector3 screenPos = Camera.main.WorldToScreenPoint(

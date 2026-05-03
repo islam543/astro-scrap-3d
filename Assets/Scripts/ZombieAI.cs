@@ -15,7 +15,7 @@ public class ZombieAI : MonoBehaviour
     public float attackCooldown = 1.2f;
 
     [Header("Movement")]
-    public float chaseSpeed  = 3f;
+    public float chaseSpeed  = 1.6f;
     public float rotateSpeed = 6f;
 
     // ── Animator parameter names (must match your Animator Controller) ──

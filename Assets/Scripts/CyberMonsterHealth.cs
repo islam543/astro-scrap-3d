@@ -34,6 +34,9 @@ public class CyberMonsterHealth : MonoBehaviour
         foreach (Collider c in GetComponentsInChildren<Collider>())
             c.enabled = false;
 
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnBossKilled(gameObject);
+
         Destroy(gameObject, destroyDelay);
     }
 }

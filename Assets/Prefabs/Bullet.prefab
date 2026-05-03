@@ -106,3 +106,7 @@ MonoBehaviour:
   speed: 40
   lifetime: 3
   damage: 50
+  damageOnHit: 1
+  destroyOnHit: 1
+  impactEffectPrefab: {fileID: 0}
+  impactEffectLifetime: 0.35

@@ -196,7 +196,8 @@ public class CyberMonsterAI : MonoBehaviour
         if (gunTimer <= 0f)
         {
             gunTimer = gunCooldown;
-            anim.SetTrigger("Attack");
+            if (anim != null)
+                anim.SetTrigger("Attack");
             FireBulletAtPlayer();
         }
         else
@@ -209,11 +210,13 @@ public class CyberMonsterAI : MonoBehaviour
     // ── Actions ────────────────────────────────────────────────
     void FireBulletAtPlayer()
     {
-        if (bulletPrefab == null) return;
+        GameObject prefab = bulletPrefab != null ? bulletPrefab : GetOrCreateMonsterBulletPrefab();
+        if (prefab == null) return;
 
         Vector3 dir = (player.position + Vector3.up * 1f - muzzlePoint.position).normalized;
-        GameObject b = Instantiate(bulletPrefab, muzzlePoint.position,
+        GameObject b = Instantiate(prefab, muzzlePoint.position,
                                    Quaternion.LookRotation(dir));
+        b.SetActive(true);
 
         MonsterBullet mb = b.GetComponent<MonsterBullet>();
         if (mb != null) mb.Init(dir, gunDamage);
@@ -269,8 +272,38 @@ public class CyberMonsterAI : MonoBehaviour
         isDead = true;
         StopAgent();
         if (agent != null) agent.enabled = false;
-        anim.SetTrigger("Die");
+        if (anim != null)
+            anim.SetTrigger("Die");
         this.enabled = false;
+    }
+
+    static GameObject _monsterBulletTemplate;
+
+    static GameObject GetOrCreateMonsterBulletPrefab()
+    {
+        if (_monsterBulletTemplate != null) return _monsterBulletTemplate;
+
+        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = "_MonsterBulletTemplate";
+        go.transform.localScale = Vector3.one * 0.18f;
+
+        Rigidbody rb = go.AddComponent<Rigidbody>();
+        rb.useGravity = false;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null)
+            shader = Shader.Find("Standard");
+        Material mat = shader != null ? new Material(shader) : new Material(Shader.Find("Sprites/Default"));
+        mat.color = new Color(0.25f, 0.9f, 1f);
+        mat.EnableKeyword("_EMISSION");
+        mat.SetColor("_EmissionColor", new Color(0.1f, 0.8f, 1f) * 3f);
+        go.GetComponent<MeshRenderer>().material = mat;
+
+        go.SetActive(false);
+        go.AddComponent<MonsterBullet>();
+        _monsterBulletTemplate = go;
+        return go;
     }
 
     void OnDrawGizmosSelected()

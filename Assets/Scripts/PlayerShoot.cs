@@ -36,6 +36,9 @@ public class PlayerShoot : MonoBehaviour
 
     void Update()
     {
+        if (GameManager.Instance != null && !GameManager.Instance.CanPlayerAct)
+            return;
+
         bool fire = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
         if (fire && Time.time >= nextFire)
         {
@@ -46,75 +49,48 @@ public class PlayerShoot : MonoBehaviour
 
     void Shoot()
     {
+        if (fpsCam == null)
+            fpsCam = Camera.main;
         if (fpsCam == null) return;
 
-        Ray     aimRay = fpsCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        Vector3 dir    = aimRay.direction;
+        Ray aimRay = fpsCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Vector3 targetPoint = GetAimPoint(aimRay);
+        Vector3 muzzlePosition = muzzlePoint != null ? muzzlePoint.position : transform.position;
+        Vector3 dir = (targetPoint - muzzlePosition).normalized;
+        if (dir.sqrMagnitude < 0.001f)
+            dir = aimRay.direction;
 
-        ApplyCameraRayDamage(aimRay);
-
-        // Spawn visual bullet from muzzle — damage is handled by camera ray above
         GameObject prefab = bulletPrefab != null ? bulletPrefab : GetOrCreateBulletPrefab();
-        GameObject b      = Instantiate(prefab, muzzlePoint.position,
-                                        Quaternion.LookRotation(dir));
+        GameObject b = Instantiate(prefab, muzzlePosition, Quaternion.LookRotation(dir));
         b.SetActive(true);
 
         Bullet bullet = b.GetComponent<Bullet>();
+        if (bullet == null)
+            bullet = b.AddComponent<Bullet>();
+
         if (bullet != null)
         {
-            bullet.damage      = 0;
-            bullet.damageOnHit = false;  // visual only; camera ray already handled damage
+            bullet.damage = damage;
+            bullet.damageOnHit = true;
         }
     }
 
-    void ApplyCameraRayDamage(Ray aimRay)
+    Vector3 GetAimPoint(Ray aimRay)
     {
-        // ~ignoreLayers inverts the mask: all layers EXCEPT the ones we want to skip
         int layerMask = ~ignoreLayers.value;
         RaycastHit[] hits = Physics.RaycastAll(aimRay, range, layerMask, QueryTriggerInteraction.Ignore);
         if (hits.Length == 0)
-        {
-            Debug.Log("[PlayerShoot] Camera ray hit: nothing");
-            return;
-        }
+            return aimRay.origin + aimRay.direction * range;
 
-        // Sort closest first
         Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
         foreach (RaycastHit hit in hits)
         {
-            // Skip the player's own colliders (body, capsule, etc.)
             if (IsPlayerCollider(hit.collider)) continue;
-
-            // Skip objects with no health component — keep searching for an enemy behind them.
-            // This prevents the gun model (separate object with no health) from blocking shots.
-            ZombieHealth zombieHealth = hit.collider.GetComponentInParent<ZombieHealth>();
-            if (zombieHealth != null)
-            {
-                Debug.Log($"[PlayerShoot] Hit zombie: {zombieHealth.gameObject.name} for {damage}");
-                zombieHealth.TakeDamage(damage);
-                return;
-            }
-
-            CyberMonsterHealth cyberHealth = hit.collider.GetComponentInParent<CyberMonsterHealth>();
-            if (cyberHealth != null)
-            {
-                Debug.Log($"[PlayerShoot] Hit cyber monster: {cyberHealth.gameObject.name} for {damage}");
-                cyberHealth.TakeDamage(damage);
-                return;
-            }
-
-            // Hit a solid wall/terrain — stop looking further
-            if (!hit.collider.isTrigger)
-            {
-                Debug.Log($"[PlayerShoot] Ray blocked by: {hit.collider.gameObject.name}");
-                return;
-            }
-
-            // Trigger collider with no health — keep searching through it
+            return hit.point;
         }
 
-        Debug.Log("[PlayerShoot] Camera ray hit only player colliders or non-solid objects");
+        return aimRay.origin + aimRay.direction * range;
     }
 
     bool IsPlayerCollider(Collider col)
@@ -138,11 +114,14 @@ public class PlayerShoot : MonoBehaviour
         go.transform.localScale       = new Vector3(0.06f, 0.15f, 0.06f);
         go.transform.localEulerAngles = new Vector3(90f, 0f, 0f);
 
-        UnityEngine.Object.Destroy(go.GetComponent<CapsuleCollider>());
+        CapsuleCollider capsuleCollider = go.GetComponent<CapsuleCollider>();
+        if (capsuleCollider != null)
+            capsuleCollider.isTrigger = true;
 
-        Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        if (mat.shader.name == "Hidden/InternalErrorShader")
-            mat = new Material(Shader.Find("Standard"));
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null)
+            shader = Shader.Find("Standard");
+        Material mat = shader != null ? new Material(shader) : new Material(Shader.Find("Sprites/Default"));
         mat.color = new Color(1f, 0.55f, 0f);
         mat.EnableKeyword("_EMISSION");
         mat.SetColor("_EmissionColor", new Color(1f, 0.35f, 0f) * 4f);

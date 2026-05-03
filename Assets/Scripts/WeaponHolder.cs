@@ -33,6 +33,9 @@ public class WeaponHolder : MonoBehaviour
 
     void Update()
     {
+        if (GameManager.Instance != null && !GameManager.Instance.CanPlayerAct)
+            return;
+
         // G to drop current weapon
         if (equippedWeapon != null &&
             Keyboard.current != null &&
@@ -44,6 +47,9 @@ public class WeaponHolder : MonoBehaviour
 
     public void PickUp(WeaponPickup pickup)
     {
+        if (GameManager.Instance != null && !GameManager.Instance.CanPlayerAct)
+            return;
+
         // Drop whatever we're holding first
         if (equippedWeapon != null) Drop();
 
