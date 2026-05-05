@@ -37157,8 +37157,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba22782705ce15b46bc2e16112db4640, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuController1
-  pausePanel: {fileID: 850356555}
-  settingsPanel: {fileID: 1236826103}
+  pausePanel: {fileID: 788023857}
+  settingsPanel: {fileID: 1209403572}
   mainMenuSceneName: MainMenu
 --- !u!1001 &1827346843
 PrefabInstance:

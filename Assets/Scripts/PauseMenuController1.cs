@@ -70,14 +70,20 @@ public class PauseMenuController1 : MonoBehaviour
 
     public void OpenSettings()
     {
-        if (settingsPanel != null)
-            settingsPanel.SetActive(true);
+        if (settingsPanel != null && pausePanel != null)
+        {
+            settingsPanel.SetActive(true); // Show Settings
+            pausePanel.SetActive(false);  // Hide the Main Pause buttons
+        }
     }
 
     public void CloseSettings()
     {
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
+        if (settingsPanel != null && pausePanel != null)
+        {
+            settingsPanel.SetActive(false); // Hide Settings
+            pausePanel.SetActive(true);    // Bring back Main Pause buttons
+        }
     }
 
     public void QuitToMainMenu()

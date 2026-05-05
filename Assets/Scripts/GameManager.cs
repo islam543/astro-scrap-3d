@@ -49,6 +49,11 @@ public class GameManager : MonoBehaviour
     public float minimumDirectionalLightIntensity = 1.35f;
     public float maxFogDensity = 0.008f;
 
+    [Header("Zombie Scaling")]
+    public int roundOneZombieHealth = 100;
+    public int roundTwoZombieHealth = 180;
+    public int roundThreeZombieHealth = 250;
+
     private enum GamePhase { MainMenu, Instructions, Playing, Victory, GameOver }
 
     private readonly List<GameObject> activeEnemies = new List<GameObject>();
@@ -295,6 +300,12 @@ public class GameManager : MonoBehaviour
         UpdateHud();
         ShowRoundAnnouncement();
     }
+    private int GetZombieHealthForRound(int roundNumber)
+    {
+        if (roundNumber == 2) return roundTwoZombieHealth;
+        if (roundNumber >= 3) return roundThreeZombieHealth;
+        return roundOneZombieHealth;
+    }
 
     private void SpawnZombieRound(int zombieCount)
     {
@@ -356,6 +367,12 @@ public class GameManager : MonoBehaviour
 
         float zombieSpeed = GetZombieChaseSpeedForRound(currentRound);
         int zombieDamage = GetZombieAttackDamageForRound(currentRound);
+        int zombieHealth = GetZombieHealthForRound(currentRound);
+
+        foreach (ZombieHealth zombieHealthComponent in enemy.GetComponentsInChildren<ZombieHealth>(true))
+        {
+            zombieHealthComponent.SetHealth(zombieHealth);
+        }
 
         foreach (ZombieAI zombieAI in enemy.GetComponentsInChildren<ZombieAI>(true))
         {

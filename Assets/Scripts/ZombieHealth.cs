@@ -13,6 +13,11 @@ public class ZombieHealth : MonoBehaviour
 
     private bool isDead = false;
 
+
+    void Awake()
+    {
+        currentHealth = maxHealth;
+    }
     void Start()
     {
         currentHealth = maxHealth;
@@ -130,6 +135,14 @@ public class ZombieHealth : MonoBehaviour
         }
         return false;
     }
+    public void SetHealth(int newHealth)
+{
+    maxHealth = newHealth;
+    currentHealth = newHealth;
+    isDead = false;
+
+    Debug.Log($"[ZombieHealth] Health scaled to {currentHealth}/{maxHealth}");
+}
 
     public int  GetHealth() => currentHealth;
     public bool IsDead()    => isDead;
