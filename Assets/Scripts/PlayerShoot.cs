@@ -20,6 +20,7 @@ public class PlayerShoot : MonoBehaviour
     [Header("Effects")]
     public ParticleSystem muzzleFlash;
     public Light muzzleLight;
+    public AudioClip shootSound;
     public AudioSource shootAudio;
     public CameraShake cameraShake;
     public float shakeDuration = 0.08f;
@@ -28,6 +29,7 @@ public class PlayerShoot : MonoBehaviour
     [Header("Layer Mask")]
     [Tooltip("Objects on this layer are skipped by the damage ray. Put your weapon/player model here if needed.")]
     public LayerMask ignoreLayers = 0;
+    [HideInInspector] public bool fullAuto = false;
 
     private Camera fpsCam;
     private float nextFire = 0f;
@@ -56,13 +58,18 @@ public class PlayerShoot : MonoBehaviour
         if (GameManager.Instance != null && !GameManager.Instance.CanPlayerAct)
             return;
 
-        bool fire = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+        bool fire = Mouse.current != null && (
+            fullAuto
+                ? Mouse.current.leftButton.isPressed
+                : Mouse.current.leftButton.wasPressedThisFrame
+        );
 
         if (fire && Time.time >= nextFire)
         {
             nextFire = Time.time + fireRate;
             Shoot();
         }
+        
     }
 
     void Shoot()
@@ -106,8 +113,17 @@ public class PlayerShoot : MonoBehaviour
         if (muzzleLight != null)
             StartCoroutine(MuzzleLightFlash());
 
-        if (shootAudio != null)
-            shootAudio.Play();
+        if (shootSound != null)
+        {
+            if (shootAudio == null)
+            {
+                shootAudio = GetComponent<AudioSource>();
+                if (shootAudio == null)
+                    shootAudio = gameObject.AddComponent<AudioSource>();
+            }
+
+            shootAudio.PlayOneShot(shootSound);
+        }
 
         if (cameraShake != null)
             cameraShake.Shake(shakeDuration, shakeMagnitude);

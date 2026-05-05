@@ -11,7 +11,7 @@ using UnityEngine.InputSystem;
 public class WeaponHolder : MonoBehaviour
 {
     [Header("Hold transform – must match the default 'Weapon' child of Main Camera")]
-    public Vector3 holdPosition = new Vector3(0.087f, -0.061f, 0.341f);
+    public Vector3 holdPosition = new Vector3(0.087f, -0.19f, 0.88f);
     public Vector3 holdRotation = new Vector3(0f, 353.71f, 0f);
     public Vector3 holdScale    = new Vector3(0.1f,  0.1f,   0.1f);
 
@@ -92,6 +92,11 @@ public class WeaponHolder : MonoBehaviour
         equippedWeapon.transform.localEulerAngles = holdRotation;
         equippedWeapon.transform.localScale       = holdScale;
 
+        PlayerShoot shooter = cameraTransform.GetComponentInChildren<PlayerShoot>();
+        if (shooter != null)
+            shooter.fireRate = pickup.fireRate;
+            shooter.fullAuto = false;
+
         // ── 3. Kill physics so the gun doesn't fall or drift ──
         Rigidbody rb = equippedWeapon.GetComponent<Rigidbody>();
         if (rb != null) rb.isKinematic = true;
@@ -130,6 +135,9 @@ public class WeaponHolder : MonoBehaviour
                            : Vector3.forward * dropForce;
         rb.AddForce(throwDir, ForceMode.Impulse);
         rb.AddTorque(Random.insideUnitSphere * 2f, ForceMode.Impulse);
+        PlayerShoot shooter = cameraTransform.GetComponentInChildren<PlayerShoot>();
+        if (shooter != null)
+            shooter.fireRate = 0.25f;  // your default
 
         // Let WeaponPickup re-enable hover so it can be picked up again
         if (equippedPickup != null)

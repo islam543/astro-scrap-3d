@@ -15,6 +15,9 @@ public class WeaponPickup : MonoBehaviour
     public float bobHeight   = 0.15f;
     public float bobSpeed    = 1.8f;
     public float rotateSpeed = 60f;
+    [Header("Shooting")]
+    public float fireRate = 0.15f;  // set per-weapon in Inspector
+    public bool fullAuto = false;
 
     private Vector3 startPos;
     private bool    playerNear = false;

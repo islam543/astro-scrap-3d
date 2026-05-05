@@ -9842,7 +9842,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -331}
+  m_AnchoredPosition: {x: 0, y: -589.1}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &513914672
@@ -13276,7 +13276,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &679906639
 RectTransform:
   m_ObjectHideFlags: 0
@@ -14732,6 +14732,7 @@ MonoBehaviour:
   muzzlePoint: {fileID: 463836697}
   muzzleFlash: {fileID: 0}
   muzzleLight: {fileID: 0}
+  shootSound: {fileID: 8300000, guid: 8029bed2c2079ff479b5e38532832551, type: 3}
   shootAudio: {fileID: 0}
   cameraShake: {fileID: 0}
   shakeDuration: 0.08
@@ -21167,8 +21168,8 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 788023858}
-  - {fileID: 679906639}
   - {fileID: 513914671}
+  - {fileID: 679906639}
   - {fileID: 1015058064}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -40627,7 +40628,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4736c2acd643ea64c9177439ada534e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponHolder
-  holdPosition: {x: 0.25, y: -0.22, z: 0.45}
+  holdPosition: {x: 0.25, y: -0.19, z: 0.88}
   holdRotation: {x: 0, y: 0, z: 0}
   holdScale: {x: 0.1, y: 0.1, z: 0.1}
   dropForce: 4
