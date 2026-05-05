@@ -7,9 +7,7 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem.UI;
-#endif
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 #if UNITY_EDITOR
@@ -66,6 +64,9 @@ public class GameManager : MonoBehaviour
         new Vector3(-16f, 0f, -2f),
         new Vector3(2f, 0f, -18f)
     };
+
+    private const float MinimumEnemyDetectionRange = 50f;
+    private const float ZombieSphereColliderCenterY = 1f;
 
     private Canvas runtimeCanvas;
     private GameObject startScreenPanel;
@@ -340,6 +341,9 @@ public class GameManager : MonoBehaviour
         if (enemy == null) return;
 
         if (!isBoss)
+            NormalizeZombieSphereColliders(enemy);
+
+        if (!isBoss)
         {
             foreach (CyberMonsterAI cyberAI in enemy.GetComponentsInChildren<CyberMonsterAI>(true))
                 cyberAI.enabled = false;
@@ -356,9 +360,13 @@ public class GameManager : MonoBehaviour
         foreach (ZombieAI zombieAI in enemy.GetComponentsInChildren<ZombieAI>(true))
         {
             zombieAI.playerTarget = playerTransform;
+            zombieAI.detectionRange = Mathf.Max(zombieAI.detectionRange, MinimumEnemyDetectionRange);
             zombieAI.chaseSpeed = zombieSpeed;
             zombieAI.attackDamage = zombieDamage;
         }
+
+        foreach (CyberMonsterAI cyberAI in enemy.GetComponentsInChildren<CyberMonsterAI>(true))
+            cyberAI.detectionRange = Mathf.Max(cyberAI.detectionRange, MinimumEnemyDetectionRange);
 
         foreach (NavMeshAgent agent in enemy.GetComponentsInChildren<NavMeshAgent>(true))
         {
@@ -369,6 +377,18 @@ public class GameManager : MonoBehaviour
         enemy.SetActive(true);
         activeEnemies.Add(enemy);
         enemiesRemaining++;
+    }
+
+    private void NormalizeZombieSphereColliders(GameObject zombie)
+    {
+        if (zombie == null) return;
+
+        foreach (SphereCollider col in zombie.GetComponentsInChildren<SphereCollider>(true))
+        {
+            Vector3 center = col.center;
+            center.y = ZombieSphereColliderCenterY;
+            col.center = center;
+        }
     }
 
     private void RegisterEnemyKilled(GameObject enemy)
@@ -1080,10 +1100,6 @@ public class GameManager : MonoBehaviour
 
         GameObject eventSystemObject = new GameObject("EventSystem");
         eventSystemObject.AddComponent<EventSystem>();
-#if ENABLE_INPUT_SYSTEM
         eventSystemObject.AddComponent<InputSystemUIInputModule>();
-#else
-        eventSystemObject.AddComponent<StandaloneInputModule>();
-#endif
     }
 }

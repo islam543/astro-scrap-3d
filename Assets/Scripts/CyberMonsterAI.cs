@@ -11,7 +11,7 @@ public class CyberMonsterAI : MonoBehaviour
 {
     // ── Tuning ─────────────────────────────────────────────────
     [Header("Detection")]
-    public float detectionRange = 22f;
+    public float detectionRange = 50f;
     public float meleeRange     = 2.2f;
     public float gunRange       = 14f;          // beyond melee but in detection
 
@@ -43,6 +43,8 @@ public class CyberMonsterAI : MonoBehaviour
     enum State { Idle, Chase, MeleeAttack, GunAttack }
     private State state = State.Idle;
 
+    private const float MinimumDetectionRange = 50f;
+
     // animation state names (must match controller exactly)
     const string ANIM_IDLE   = "Idle";
     const string ANIM_WALK   = "Walking";
@@ -52,6 +54,11 @@ public class CyberMonsterAI : MonoBehaviour
     const string ANIM_DEATH  = "Death";
 
     // ── Lifecycle ──────────────────────────────────────────────
+    void Awake()
+    {
+        detectionRange = Mathf.Max(detectionRange, MinimumDetectionRange);
+    }
+
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();

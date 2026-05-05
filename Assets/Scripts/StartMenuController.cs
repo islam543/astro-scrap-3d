@@ -1,148 +1,298 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem.UI;
-#endif
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+/// <summary>
+/// Attached to a GameObject in StartScene.
+/// Builds a full main-menu canvas at runtime: Play, Settings, Quit.
+/// </summary>
 public class StartMenuController : MonoBehaviour
 {
-    [Header("Scenes")]
+    [Header("Scene to load when Play is pressed")]
     public string gameSceneName = "3DGame";
 
+    // ── panels ────────────────────────────────────────────────
+    private GameObject mainPanel;
+    private GameObject settingsPanel;
+
+    // ── font cache ────────────────────────────────────────────
     private Font menuFont;
 
+    // ── Unity lifecycle ───────────────────────────────────────
     void Awake()
     {
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        Cursor.visible   = true;
 
         EnsureEventSystem();
-        BuildMenu();
+        BuildCanvas();
     }
 
+    // ── button callbacks ──────────────────────────────────────
     public void PlayGame()
     {
         Time.timeScale = 1f;
         SceneManager.LoadScene(gameSceneName);
     }
 
-    private void BuildMenu()
+    public void OpenSettings()
     {
-        if (GameObject.Find("StartMenuCanvas") != null)
-            return;
+        if (mainPanel    != null) mainPanel.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(true);
+    }
 
-        GameObject canvasObject = new GameObject("StartMenuCanvas");
-        Canvas canvas = canvasObject.AddComponent<Canvas>();
+    public void CloseSettings()
+    {
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (mainPanel     != null) mainPanel.SetActive(true);
+    }
+
+    public void QuitGame()
+    {
+        Debug.Log("[StartMenuController] Quit pressed.");
+        Application.Quit();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
+    }
+
+    // ── canvas builder ────────────────────────────────────────
+    void BuildCanvas()
+    {
+        if (GameObject.Find("StartMenuCanvas") != null) return; // already built
+
+        // Root canvas
+        GameObject canvasGO = new GameObject("StartMenuCanvas");
+        Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvasObject.AddComponent<GraphicRaycaster>();
+        canvasGO.AddComponent<GraphicRaycaster>();
 
-        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
+        scaler.matchWidthOrHeight  = 0.5f;
 
-        GameObject panel = new GameObject("Background");
-        panel.transform.SetParent(canvasObject.transform, false);
-        RectTransform panelRect = panel.AddComponent<RectTransform>();
-        panelRect.anchorMin = Vector2.zero;
-        panelRect.anchorMax = Vector2.one;
-        panelRect.offsetMin = Vector2.zero;
-        panelRect.offsetMax = Vector2.zero;
+        // Dark full-screen background
+        GameObject bg = CreateFullPanel("Background", canvasGO.transform, new Color(0.04f, 0.04f, 0.06f, 1f));
 
-        Image panelImage = panel.AddComponent<Image>();
-        panelImage.color = new Color(0.035f, 0.04f, 0.045f, 1f);
+        // Main menu panel
+        mainPanel = CreateMainPanel(bg.transform);
 
-        GameObject content = new GameObject("Content");
-        content.transform.SetParent(panel.transform, false);
-        RectTransform contentRect = content.AddComponent<RectTransform>();
-        contentRect.anchorMin = new Vector2(0.5f, 0.5f);
-        contentRect.anchorMax = new Vector2(0.5f, 0.5f);
-        contentRect.pivot = new Vector2(0.5f, 0.5f);
-        contentRect.sizeDelta = new Vector2(620f, 360f);
-
-        VerticalLayoutGroup layout = content.AddComponent<VerticalLayoutGroup>();
-        layout.childAlignment = TextAnchor.MiddleCenter;
-        layout.spacing = 24f;
-        layout.childForceExpandHeight = false;
-        layout.childForceExpandWidth = false;
-
-        CreateText(content.transform, "CYBER ZOMBIE SIEGE", 54, FontStyle.Bold, Color.white, new Vector2(620f, 95f));
-        CreateText(content.transform, "Survive the zombie waves and defeat Cyber Monsters 2.", 24, FontStyle.Normal, new Color(0.82f, 0.92f, 0.88f), new Vector2(620f, 64f));
-        CreatePlayButton(content.transform);
+        // Settings panel (starts hidden)
+        settingsPanel = CreateSettingsPanel(bg.transform);
+        settingsPanel.SetActive(false);
     }
 
-    private void CreatePlayButton(Transform parent)
+    // ── main menu ─────────────────────────────────────────────
+    GameObject CreateMainPanel(Transform parent)
     {
-        GameObject buttonObject = new GameObject("PlayButton");
-        buttonObject.transform.SetParent(parent, false);
+        GameObject panel = new GameObject("MainPanel");
+        panel.transform.SetParent(parent, false);
+        RectTransform rect = panel.AddComponent<RectTransform>();
+        FillParent(rect);
 
-        RectTransform rect = buttonObject.AddComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(320f, 64f);
+        RectTransform column = CreateColumn(panel.transform, new Vector2(400f, 500f), 20f);
 
-        Image image = buttonObject.AddComponent<Image>();
-        image.color = new Color(0.08f, 0.55f, 0.42f, 1f);
+        // Title
+        MakeText(column, "CYBER ZOMBIE SIEGE", 52, FontStyle.Bold, Color.white, new Vector2(400f, 80f));
+        MakeText(column, "Survive. Shoot. Conquer.", 22, FontStyle.Normal,
+                 new Color(0.75f, 0.88f, 0.82f), new Vector2(400f, 40f));
 
-        Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
-        button.onClick.AddListener(PlayGame);
+        // Spacer
+        MakeSpacer(column, 10f);
 
-        ColorBlock colors = button.colors;
-        colors.normalColor = new Color(0.08f, 0.55f, 0.42f, 1f);
-        colors.highlightedColor = new Color(0.13f, 0.7f, 0.53f, 1f);
-        colors.pressedColor = new Color(0.06f, 0.4f, 0.33f, 1f);
-        colors.selectedColor = colors.highlightedColor;
-        button.colors = colors;
+        // Buttons
+        MakeButton(column, "PLAY",     new Color(0.08f, 0.54f, 0.40f), PlayGame);
+        MakeButton(column, "SETTINGS", new Color(0.18f, 0.28f, 0.40f), OpenSettings);
+        MakeButton(column, "QUIT",     new Color(0.40f, 0.10f, 0.10f), QuitGame);
 
-        Text label = CreateText(buttonObject.transform, "PLAY", 28, FontStyle.Bold, Color.white, rect.sizeDelta);
-        RectTransform labelRect = label.rectTransform;
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = Vector2.zero;
-        labelRect.offsetMax = Vector2.zero;
+        return panel;
     }
 
-    private Text CreateText(Transform parent, string value, int size, FontStyle style, Color color, Vector2 rectSize)
+    // ── settings panel ────────────────────────────────────────
+    GameObject CreateSettingsPanel(Transform parent)
     {
-        GameObject textObject = new GameObject("Text");
-        textObject.transform.SetParent(parent, false);
+        GameObject panel = new GameObject("SettingsPanel");
+        panel.transform.SetParent(parent, false);
+        RectTransform rect = panel.AddComponent<RectTransform>();
+        FillParent(rect);
 
-        Text text = textObject.AddComponent<Text>();
-        text.font = GetFont();
-        text.text = value;
-        text.fontSize = size;
-        text.fontStyle = style;
-        text.alignment = TextAnchor.MiddleCenter;
-        text.color = color;
-        text.horizontalOverflow = HorizontalWrapMode.Wrap;
-        text.verticalOverflow = VerticalWrapMode.Overflow;
-        text.rectTransform.sizeDelta = rectSize;
-        return text;
+        RectTransform column = CreateColumn(panel.transform, new Vector2(480f, 360f), 20f);
+
+        MakeText(column, "SETTINGS", 44, FontStyle.Bold, Color.white, new Vector2(480f, 70f));
+        MakeText(column, "Volume", 22, FontStyle.Normal, new Color(0.82f, 0.88f, 0.82f), new Vector2(480f, 36f));
+        MakeSlider(column, AudioListener.volume, 0f, 1f, v => AudioListener.volume = v);
+        MakeSpacer(column, 10f);
+        MakeButton(column, "BACK", new Color(0.18f, 0.28f, 0.40f), CloseSettings);
+
+        return panel;
     }
 
-    private Font GetFont()
+    // ── helper builders ───────────────────────────────────────
+    GameObject CreateFullPanel(string goName, Transform parent, Color color)
+    {
+        GameObject go = new GameObject(goName);
+        go.transform.SetParent(parent, false);
+        RectTransform r = go.AddComponent<RectTransform>();
+        FillParent(r);
+        go.AddComponent<Image>().color = color;
+        return go;
+    }
+
+    RectTransform CreateColumn(Transform parent, Vector2 size, float spacing)
+    {
+        GameObject col = new GameObject("Column");
+        col.transform.SetParent(parent, false);
+        RectTransform rect = col.AddComponent<RectTransform>();
+        rect.anchorMin        = new Vector2(0.5f, 0.5f);
+        rect.anchorMax        = new Vector2(0.5f, 0.5f);
+        rect.pivot            = new Vector2(0.5f, 0.5f);
+        rect.sizeDelta        = size;
+        rect.anchoredPosition = Vector2.zero;
+
+        VerticalLayoutGroup vlg = col.AddComponent<VerticalLayoutGroup>();
+        vlg.childAlignment          = TextAnchor.MiddleCenter;
+        vlg.spacing                 = spacing;
+        vlg.childForceExpandHeight  = false;
+        vlg.childForceExpandWidth   = false;
+        return rect;
+    }
+
+    Text MakeText(RectTransform parent, string content, int size, FontStyle style,
+                  Color color, Vector2 rectSize)
+    {
+        GameObject go = new GameObject("Label");
+        go.transform.SetParent(parent, false);
+        Text t = go.AddComponent<Text>();
+        t.font                  = GetFont();
+        t.text                  = content;
+        t.fontSize              = size;
+        t.fontStyle             = style;
+        t.color                 = color;
+        t.alignment             = TextAnchor.MiddleCenter;
+        t.horizontalOverflow    = HorizontalWrapMode.Wrap;
+        t.verticalOverflow      = VerticalWrapMode.Overflow;
+        t.rectTransform.sizeDelta = rectSize;
+        return t;
+    }
+
+    void MakeSpacer(RectTransform parent, float height)
+    {
+        GameObject go = new GameObject("Spacer");
+        go.transform.SetParent(parent, false);
+        go.AddComponent<RectTransform>().sizeDelta = new Vector2(10f, height);
+    }
+
+    void MakeButton(RectTransform parent, string label, Color bg, UnityEngine.Events.UnityAction onClick)
+    {
+        GameObject go = new GameObject(label + "Btn");
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(340f, 62f);
+
+        Image img = go.AddComponent<Image>();
+        img.color = bg;
+
+        Button btn = go.AddComponent<Button>();
+        btn.targetGraphic = img;
+        btn.onClick.AddListener(onClick);
+
+        ColorBlock cb = btn.colors;
+        cb.normalColor      = bg;
+        cb.highlightedColor = bg * 1.25f;
+        cb.pressedColor     = bg * 0.75f;
+        cb.selectedColor    = cb.highlightedColor;
+        btn.colors          = cb;
+
+        // Label inside button
+        GameObject txtGO = new GameObject("Text");
+        txtGO.transform.SetParent(go.transform, false);
+        Text t = txtGO.AddComponent<Text>();
+        t.font       = GetFont();
+        t.text       = label;
+        t.fontSize   = 26;
+        t.fontStyle  = FontStyle.Bold;
+        t.alignment  = TextAnchor.MiddleCenter;
+        t.color      = Color.white;
+        t.horizontalOverflow = HorizontalWrapMode.Overflow;
+        t.verticalOverflow   = VerticalWrapMode.Overflow;
+        RectTransform tr = t.rectTransform;
+        tr.anchorMin  = Vector2.zero;
+        tr.anchorMax  = Vector2.one;
+        tr.offsetMin  = Vector2.zero;
+        tr.offsetMax  = Vector2.zero;
+    }
+
+    void MakeSlider(RectTransform parent, float value, float min, float max,
+                    UnityEngine.Events.UnityAction<float> onChange)
+    {
+        GameObject go = new GameObject("Slider");
+        go.transform.SetParent(parent, false);
+        RectTransform sr = go.AddComponent<RectTransform>();
+        sr.sizeDelta = new Vector2(340f, 40f);
+
+        Slider slider = go.AddComponent<Slider>();
+        slider.minValue = min;
+        slider.maxValue = max;
+        slider.value    = value;
+
+        // Background
+        GameObject bgGO = new GameObject("BG");
+        bgGO.transform.SetParent(go.transform, false);
+        Image bgImg = bgGO.AddComponent<Image>();
+        bgImg.color = new Color(0.12f, 0.14f, 0.16f);
+        RectTransform bgR = bgImg.rectTransform;
+        bgR.anchorMin  = Vector2.zero; bgR.anchorMax = Vector2.one;
+        bgR.offsetMin  = new Vector2(0, 14f); bgR.offsetMax = new Vector2(0, -14f);
+
+        // Fill
+        GameObject fillGO = new GameObject("Fill");
+        fillGO.transform.SetParent(go.transform, false);
+        Image fillImg = fillGO.AddComponent<Image>();
+        fillImg.color = new Color(0.1f, 0.7f, 0.5f);
+        RectTransform fillR = fillImg.rectTransform;
+        fillR.anchorMin = Vector2.zero; fillR.anchorMax = Vector2.one;
+        fillR.offsetMin = new Vector2(0, 14f); fillR.offsetMax = new Vector2(0, -14f);
+
+        // Handle
+        GameObject handleGO = new GameObject("Handle");
+        handleGO.transform.SetParent(go.transform, false);
+        Image handleImg = handleGO.AddComponent<Image>();
+        handleImg.color = new Color(1f, 0.88f, 0.52f);
+        handleImg.rectTransform.sizeDelta = new Vector2(22f, 32f);
+
+        slider.fillRect   = fillR;
+        slider.handleRect = handleImg.rectTransform;
+        slider.targetGraphic = handleImg;
+        slider.onValueChanged.AddListener(onChange);
+    }
+
+    static void FillParent(RectTransform r)
+    {
+        r.anchorMin = Vector2.zero;
+        r.anchorMax = Vector2.one;
+        r.offsetMin = Vector2.zero;
+        r.offsetMax = Vector2.zero;
+    }
+
+    Font GetFont()
     {
         if (menuFont != null) return menuFont;
-
-        menuFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        menuFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         if (menuFont == null)
-            menuFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
+            menuFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
         return menuFont;
     }
 
-    private void EnsureEventSystem()
+    void EnsureEventSystem()
     {
         if (FindFirstObjectByType<EventSystem>() != null) return;
-
-        GameObject eventSystemObject = new GameObject("EventSystem");
-        eventSystemObject.AddComponent<EventSystem>();
-#if ENABLE_INPUT_SYSTEM
-        eventSystemObject.AddComponent<InputSystemUIInputModule>();
-#else
-        eventSystemObject.AddComponent<StandaloneInputModule>();
-#endif
+        GameObject es = new GameObject("EventSystem");
+        es.AddComponent<EventSystem>();
+        es.AddComponent<InputSystemUIInputModule>();
     }
 }

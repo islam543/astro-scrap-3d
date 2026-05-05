@@ -7,7 +7,7 @@ public class ZombieAI : MonoBehaviour
     public Transform playerTarget;
 
     [Header("Detection")]
-    public float detectionRange = 20f;
+    public float detectionRange = 50f;
     public float attackRange    = 1.8f;
 
     [Header("Combat")]
@@ -40,7 +40,15 @@ public class ZombieAI : MonoBehaviour
     enum State { Idle, Chase, Attack }
     private State state = State.Idle;
 
+    private const float MinimumDetectionRange = 50f;
+
     // ────────────────────────────────────────────────────────────────────
+
+    void Awake()
+    {
+        detectionRange = Mathf.Max(detectionRange, MinimumDetectionRange);
+        NormalizeSphereColliderCenter();
+    }
 
     void Start()
     {
@@ -315,5 +323,15 @@ public class ZombieAI : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, detectionRange);
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
+    }
+
+    void NormalizeSphereColliderCenter()
+    {
+        foreach (SphereCollider col in GetComponentsInChildren<SphereCollider>(true))
+        {
+            Vector3 center = col.center;
+            center.y = 1f;
+            col.center = center;
+        }
     }
 }
