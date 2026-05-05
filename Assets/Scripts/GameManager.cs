@@ -371,7 +371,12 @@ public class GameManager : MonoBehaviour
         foreach (NavMeshAgent agent in enemy.GetComponentsInChildren<NavMeshAgent>(true))
         {
             if (!isBoss)
+                {
                 agent.speed = zombieSpeed;
+                agent.acceleration = 18f;
+                agent.angularSpeed = 720f;
+                agent.stoppingDistance = 1.4f;
+            }
         }
 
         enemy.SetActive(true);
@@ -863,9 +868,9 @@ public class GameManager : MonoBehaviour
 
     private float GetZombieChaseSpeedForRound(int roundNumber)
     {
-        if (roundNumber == 2) return 2.2f;
-        if (roundNumber >= 3) return 2.8f;
-        return zombieMoveSpeed;
+        if (roundNumber == 2) return 4.0f;
+        if (roundNumber >= 3) return 4.5f;
+        return 2.8f;
     }
 
     private int GetZombieAttackDamageForRound(int roundNumber)
