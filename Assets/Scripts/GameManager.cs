@@ -507,13 +507,28 @@ public class GameManager : MonoBehaviour
 
     private void ShowVictory()
     {
+        if (isVictory) return;   // guard: don't trigger twice
         isVictory = true;
         phase = GamePhase.Victory;
 
-        SetPanel(hudPanel, false);
+        // Hide every possible panel first so nothing overlaps
+        SetPanel(hudPanel,          false);
+        SetPanel(startScreenPanel,  false);
+        SetPanel(settingsPanel,     false);
+        SetPanel(instructionsPanel, false);
+
+        // Also hide the inspector-assigned game-over panel if it somehow snuck in
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
+        // Show victory
         SetPanel(victoryPanel, true);
-        SetGameplayPaused(true);
-        Debug.Log("[GameManager] Victory. Cyber Monsters 2 defeated.");
+
+        // Pause gameplay, unlock cursor so buttons are clickable
+        Time.timeScale = 0f;
+        SetPlayerControls(false);
+        UnlockCursor();
+
+        Debug.Log("[GameManager] Victory! Cyber Monsters 2 defeated.");
     }
 
     private void CacheEnemyTemplates()
@@ -861,15 +876,33 @@ public class GameManager : MonoBehaviour
 
     private GameObject CreateVictoryPanel(Transform parent)
     {
-        GameObject panel = CreateFullPanel("VictoryPanel", parent, new Color(0.02f, 0.025f, 0.025f, 0.94f));
-        RectTransform content = CreateCenteredColumn(panel.transform, new Vector2(620f, 420f), 18f);
+        // Dark overlay background
+        GameObject panel = CreateFullPanel("VictoryPanel", parent, new Color(0f, 0f, 0f, 0.85f));
+        RectTransform content = CreateCenteredColumn(panel.transform, new Vector2(680f, 520f), 20f);
 
-        CreateText("VictoryTitle", content, "Victory", 52, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white, new Vector2(620f, 86f));
-        CreateText("VictoryText", content, "Cyber Monsters 2 is down. The playground is clear.", 24, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.78f, 0.9f, 0.86f), new Vector2(620f, 80f));
-        CreateButton("RestartButton", content, "PLAY AGAIN", RestartScene);
-        CreateButton("VictoryQuitButton", content, "QUIT GAME", QuitGame);
+        // Gold trophy/title line
+        CreateText("VictoryEmoji",  content, "★  YOU WIN  ★",  36, FontStyle.Bold,   TextAnchor.MiddleCenter, new Color(1f, 0.85f, 0.2f),  new Vector2(680f, 58f));
+        CreateText("VictoryTitle",  content, "MISSION COMPLETE", 58, FontStyle.Bold,   TextAnchor.MiddleCenter, Color.white,                   new Vector2(680f, 86f));
+        CreateText("VictorySub",    content, "Cyber Monsters 2 is down.\nThe playground is clear. You survived.", 22, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.72f, 0.9f, 0.8f), new Vector2(640f, 80f));
+
+        // Spacer
+        GameObject sp = new GameObject("Spacer"); sp.transform.SetParent(content, false);
+        sp.AddComponent<RectTransform>().sizeDelta = new Vector2(10f, 10f);
+
+        // Stats line (round info)
+        CreateText("VictoryStats", content, $"Rounds Survived: 3 / 3", 20, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.6f, 0.8f, 1f), new Vector2(640f, 36f));
+
+        // Buttons
+        CreateButton("RestartButton",      content, "PLAY AGAIN",  RestartScene);
+        CreateButton("VictoryQuitButton",  content, "QUIT TO MENU", GoToMainMenu);
 
         return panel;
+    }
+
+    private void GoToMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(0);
     }
 
     private GameObject CreateHud(Transform parent)
