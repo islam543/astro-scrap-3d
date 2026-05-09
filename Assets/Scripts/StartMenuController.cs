@@ -7,9 +7,13 @@ using UnityEngine.UI;
 /// <summary>
 /// Attached to a GameObject in StartScene.
 /// Builds a full main-menu canvas at runtime: Play, Settings, Quit.
+/// Settings panel includes Volume and Mouse Sensitivity sliders (saved via PlayerPrefs).
 /// </summary>
 public class StartMenuController : MonoBehaviour
 {
+    public const string PrefSensitivity = "MouseSensitivity";
+    public const string PrefVolume      = "MasterVolume";
+
     [Header("Scene to load when Play is pressed")]
     public string gameSceneName = "3DGame";
 
@@ -26,6 +30,10 @@ public class StartMenuController : MonoBehaviour
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible   = true;
+
+        // Load saved volume
+        float savedVolume = PlayerPrefs.GetFloat(PrefVolume, 1f);
+        AudioListener.volume = savedVolume;
 
         EnsureEventSystem();
         BuildCanvas();
@@ -120,12 +128,34 @@ public class StartMenuController : MonoBehaviour
         RectTransform rect = panel.AddComponent<RectTransform>();
         FillParent(rect);
 
-        RectTransform column = CreateColumn(panel.transform, new Vector2(480f, 360f), 20f);
+        // Taller column to fit both sliders
+        RectTransform column = CreateColumn(panel.transform, new Vector2(480f, 520f), 16f);
 
         MakeText(column, "SETTINGS", 44, FontStyle.Bold, Color.white, new Vector2(480f, 70f));
+
+        // ── Volume ──
         MakeText(column, "Volume", 22, FontStyle.Normal, new Color(0.82f, 0.88f, 0.82f), new Vector2(480f, 36f));
-        MakeSlider(column, AudioListener.volume, 0f, 1f, v => AudioListener.volume = v);
-        MakeSpacer(column, 10f);
+        float savedVol = PlayerPrefs.GetFloat(PrefVolume, 1f);
+        MakeSlider(column, savedVol, 0f, 1f, v =>
+        {
+            AudioListener.volume = v;
+            PlayerPrefs.SetFloat(PrefVolume, v);
+            PlayerPrefs.Save();
+        });
+
+        MakeSpacer(column, 8f);
+
+        // ── Mouse Sensitivity ──
+        MakeText(column, "Mouse Sensitivity", 22, FontStyle.Normal, new Color(0.82f, 0.88f, 0.82f), new Vector2(480f, 36f));
+        float savedSens = PlayerPrefs.GetFloat(PrefSensitivity, 1f);
+        MakeSlider(column, savedSens, 0.1f, 3f, v =>
+        {
+            PlayerPrefs.SetFloat(PrefSensitivity, v);
+            PlayerPrefs.Save();
+            Debug.Log($"[StartMenuController] Sensitivity saved: {v:0.00}x");
+        });
+
+        MakeSpacer(column, 8f);
         MakeButton(column, "BACK", new Color(0.18f, 0.28f, 0.40f), CloseSettings);
 
         return panel;

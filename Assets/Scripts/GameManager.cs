@@ -49,6 +49,16 @@ public class GameManager : MonoBehaviour
     public float minimumDirectionalLightIntensity = 1.35f;
     public float maxFogDensity = 0.008f;
 
+    [Header("Audio")]
+    [Tooltip("Played at the start of every round")]
+    public AudioClip roundStartClip;
+
+    [Tooltip("Zombie growl/idle sound — assigned automatically to spawned zombies")]
+    public AudioClip zombieGrowlClip;
+
+    [Tooltip("Seconds to wait after game loads before starting Round 1")]
+    public float firstRoundDelay = 6f;
+
     [Header("Zombie Scaling")]
     public int roundOneZombieHealth = 100;
     public int roundTwoZombieHealth = 180;
@@ -118,6 +128,10 @@ public class GameManager : MonoBehaviour
         if (autoFixSceneLighting)
             RestoreReasonableLighting();
 
+        // Load saved sensitivity from main menu settings
+        sensitivitySetting = PlayerPrefs.GetFloat(StartMenuController.PrefSensitivity, 1f);
+        ApplySensitivity(sensitivitySetting);
+
         FindPlayer();
         SubscribeToPlayerHealth();
         CacheEnemyTemplates();
@@ -136,7 +150,7 @@ public class GameManager : MonoBehaviour
             HideRuntimeUi();
             SetGameplayPaused(false);
             if (startFirstRoundOnAwake)
-                StartRound(1);
+                StartCoroutine(StartFirstRoundDelayed());
         }
     }
 
@@ -271,6 +285,27 @@ public class GameManager : MonoBehaviour
         RegisterEnemyKilled(boss);
     }
 
+    private IEnumerator StartFirstRoundDelayed()
+    {
+        Debug.Log($"[GameManager] Waiting {firstRoundDelay}s before Round 1 starts...");
+        yield return new WaitForSeconds(firstRoundDelay);
+        StartRound(1);
+    }
+
+    private void PlayRoundStartAudio()
+    {
+        if (roundStartClip == null) return;
+        // 2D audio: use a temporary AudioSource with spatialBlend = 0
+        GameObject tempGO = new GameObject("RoundStartAudio");
+        AudioSource src = tempGO.AddComponent<AudioSource>();
+        src.clip         = roundStartClip;
+        src.spatialBlend = 0f;   // 0 = fully 2D
+        src.volume       = 1f;
+        src.Play();
+        Destroy(tempGO, roundStartClip.length + 0.1f);
+        Debug.Log("[GameManager] Playing round-start audio (2D).");
+    }
+
     private void StartRound(int roundNumber)
     {
         StopAllCoroutines();
@@ -298,6 +333,7 @@ public class GameManager : MonoBehaviour
         }
 
         UpdateHud();
+        PlayRoundStartAudio();
         ShowRoundAnnouncement();
     }
     private int GetZombieHealthForRound(int roundNumber)
@@ -393,6 +429,20 @@ public class GameManager : MonoBehaviour
                 agent.acceleration = 18f;
                 agent.angularSpeed = 720f;
                 agent.stoppingDistance = 1.4f;
+            }
+        }
+
+        // Inject ZombieAudio onto every ZombieAI in this enemy
+        if (!isBoss && zombieGrowlClip != null)
+        {
+            foreach (ZombieAI zombieAI in enemy.GetComponentsInChildren<ZombieAI>(true))
+            {
+                ZombieAudio za = zombieAI.GetComponent<ZombieAudio>();
+                if (za == null) za = zombieAI.gameObject.AddComponent<ZombieAudio>();
+                // Use the single growl clip for idle and chase
+                za.idleGrowlClip   = zombieGrowlClip;
+                za.chaseGrowlClip  = zombieGrowlClip;
+                za.alertRoarClip   = zombieGrowlClip;
             }
         }
 

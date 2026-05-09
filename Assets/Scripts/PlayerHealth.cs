@@ -56,6 +56,14 @@ public class PlayerHealth : MonoBehaviour
         gameManager.GameOver();
     }
 
+    public void Heal(int amount)
+    {
+        if (isDead) return;
+        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+        Debug.Log($"[PlayerHealth] Healed {amount} HP. HP: {currentHealth}/{maxHealth}");
+        NotifyHealthChanged();
+    }
+
     public int GetHealth() => currentHealth;
     public int GetMaxHealth() => maxHealth;
     public bool IsDead() => isDead;

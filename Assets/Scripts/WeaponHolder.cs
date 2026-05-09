@@ -94,8 +94,10 @@ public class WeaponHolder : MonoBehaviour
 
         PlayerShoot shooter = cameraTransform.GetComponentInChildren<PlayerShoot>();
         if (shooter != null)
+        {
             shooter.fireRate = pickup.fireRate;
-            shooter.fullAuto = false;
+            shooter.fullAuto = pickup.fullAuto;
+        }
 
         // ── 3. Kill physics so the gun doesn't fall or drift ──
         Rigidbody rb = equippedWeapon.GetComponent<Rigidbody>();
@@ -137,7 +139,10 @@ public class WeaponHolder : MonoBehaviour
         rb.AddTorque(Random.insideUnitSphere * 2f, ForceMode.Impulse);
         PlayerShoot shooter = cameraTransform.GetComponentInChildren<PlayerShoot>();
         if (shooter != null)
-            shooter.fireRate = 0.25f;  // your default
+        {
+            shooter.fireRate = 0.25f;
+            shooter.fullAuto = false;
+        }
 
         // Let WeaponPickup re-enable hover so it can be picked up again
         if (equippedPickup != null)

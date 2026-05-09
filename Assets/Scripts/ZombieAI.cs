@@ -28,6 +28,7 @@ public class ZombieAI : MonoBehaviour
     private PlayerHealth  playerHealth;
     private float         attackTimer = 0f;
     private bool          isDead      = false;
+    private ZombieAudio   zombieAudio;
     private bool          useNavMesh  = false;
     private bool          warnedMissingPlayer = false;
     private bool          warnedMissingPlayerHealth = false;
@@ -55,6 +56,7 @@ public class ZombieAI : MonoBehaviour
         agent    = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
 
+        zombieAudio = GetComponent<ZombieAudio>();
         FindPlayer();
         SetupAnimator();
         SetupMovement();
@@ -70,7 +72,8 @@ public class ZombieAI : MonoBehaviour
 
         if (playerTarget == null)
         {
-            FindPlayer();
+            zombieAudio = GetComponent<ZombieAudio>();
+        FindPlayer();
             StopMoving();
             SetState(State.Idle);
             return;
@@ -267,6 +270,7 @@ public class ZombieAI : MonoBehaviour
 
         attackTimer = attackCooldown;
         TriggerAttackAnim();
+        zombieAudio?.OnAttack();
 
         if (playerHealth != null)
         {
@@ -294,6 +298,7 @@ public class ZombieAI : MonoBehaviour
         if (state == newState) return;
         state = newState;
         Debug.Log($"[ZombieAI] State changed to {state}.");
+        zombieAudio?.OnStateChanged((ZombieAIState)(int)state);
     }
 
     void FaceTarget(Vector3 target)
@@ -313,6 +318,7 @@ public class ZombieAI : MonoBehaviour
         StopMoving();
         if (agent != null) agent.enabled = false;
         TriggerDeathAnim();
+        zombieAudio?.OnDeath();
         Debug.Log("[ZombieAI] Dead. AI stopped.");
         this.enabled = false;
     }
