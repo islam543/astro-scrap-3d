@@ -37,6 +37,7 @@ public class StartMenuController : MonoBehaviour
 
         EnsureEventSystem();
         BuildCanvas();
+        WireSceneCanvas();   // wire existing scene Canvas buttons
     }
 
     // ── button callbacks ──────────────────────────────────────
@@ -324,5 +325,134 @@ public class StartMenuController : MonoBehaviour
         GameObject es = new GameObject("EventSystem");
         es.AddComponent<EventSystem>();
         es.AddComponent<InputSystemUIInputModule>();
+    }
+
+    // ── Wire the existing scene Canvas (HowToPlay panel) ─────
+    void WireSceneCanvas()
+    {
+        // Find the scene's own Canvas (not the one we build at runtime)
+        Canvas[] allCanvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        GameObject sceneCanvas = null;
+        foreach (Canvas c in allCanvases)
+            if (c.gameObject.name == "Canvas") { sceneCanvas = c.gameObject; break; }
+
+        if (sceneCanvas == null) return;
+
+        // Panels
+        Transform mainMenuT  = sceneCanvas.transform.Find("MainMenu");
+        Transform howToPlayT = sceneCanvas.transform.Find("HowToPlay");
+
+        if (howToPlayT == null) return;
+
+        // Hide HowToPlay at start
+        howToPlayT.gameObject.SetActive(false);
+
+        // Populate with control text
+        PopulateHowToPlay(howToPlayT);
+
+        // Wire HowToPlay button
+        Transform howToPlayBtn = mainMenuT != null ? mainMenuT.Find("HowToPlayButton") : null;
+        if (howToPlayBtn != null)
+        {
+            Button btn = howToPlayBtn.GetComponent<Button>();
+            if (btn != null) btn.onClick.AddListener(() =>
+            {
+                if (mainMenuT  != null) mainMenuT.gameObject.SetActive(false);
+                howToPlayT.gameObject.SetActive(true);
+            });
+        }
+
+        // Wire Back button
+        Transform backBtn = howToPlayT.Find("BackButton");
+        if (backBtn != null)
+        {
+            Button btn = backBtn.GetComponent<Button>();
+            if (btn != null) btn.onClick.AddListener(() =>
+            {
+                howToPlayT.gameObject.SetActive(false);
+                if (mainMenuT != null) mainMenuT.gameObject.SetActive(true);
+            });
+        }
+    }
+
+    void PopulateHowToPlay(Transform howToPlayPanel)
+    {
+        // Remove placeholder children except BackButton
+        foreach (Transform child in howToPlayPanel)
+        {
+            if (child.name != "BackButton")
+                Destroy(child.gameObject);
+        }
+
+        // Build a vertical layout on the panel
+        VerticalLayoutGroup vlg = howToPlayPanel.GetComponent<VerticalLayoutGroup>();
+        if (vlg == null) vlg = howToPlayPanel.gameObject.AddComponent<VerticalLayoutGroup>();
+        vlg.childAlignment         = TextAnchor.UpperCenter;
+        vlg.spacing                = 10f;
+        vlg.padding                = new RectOffset(40, 40, 40, 40);
+        vlg.childForceExpandHeight = false;
+        vlg.childForceExpandWidth  = false;
+
+        Font f = GetFont();
+        Vector2 titleSize = new Vector2(700f, 60f);
+        Vector2 lineSize  = new Vector2(700f, 34f);
+        Vector2 headSize  = new Vector2(700f, 44f);
+
+        // Title
+        AddLabel(howToPlayPanel, "HOW TO PLAY", 42, FontStyle.Bold, Color.white, titleSize, f);
+        AddLabel(howToPlayPanel, "Cyber Zombie Siege", 20, FontStyle.Italic, new Color(0.6f, 0.9f, 0.7f), new Vector2(700f, 28f), f);
+        AddSpacer(howToPlayPanel, 6f);
+
+        // Objective
+        AddLabel(howToPlayPanel, "── OBJECTIVE ──", 22, FontStyle.Bold, new Color(1f, 0.85f, 0.3f), headSize, f);
+        AddLabel(howToPlayPanel, "Survive 3 rounds of zombies and defeat the boss.", 18, FontStyle.Normal, Color.white, lineSize, f);
+        AddSpacer(howToPlayPanel, 4f);
+
+        // Movement
+        AddLabel(howToPlayPanel, "── MOVEMENT ──", 22, FontStyle.Bold, new Color(1f, 0.85f, 0.3f), headSize, f);
+        AddLabel(howToPlayPanel, "W / A / S / D   →   Move", 18, FontStyle.Normal, Color.white, lineSize, f);
+        AddLabel(howToPlayPanel, "Mouse             →   Look around", 18, FontStyle.Normal, Color.white, lineSize, f);
+        AddSpacer(howToPlayPanel, 4f);
+
+        // Combat
+        AddLabel(howToPlayPanel, "── COMBAT ──", 22, FontStyle.Bold, new Color(1f, 0.85f, 0.3f), headSize, f);
+        AddLabel(howToPlayPanel, "Left Click   →   Shoot", 18, FontStyle.Normal, Color.white, lineSize, f);
+        AddLabel(howToPlayPanel, "R                →   Reload", 18, FontStyle.Normal, Color.white, lineSize, f);
+        AddLabel(howToPlayPanel, "E                →   Pick up weapon", 18, FontStyle.Normal, Color.white, lineSize, f);
+        AddSpacer(howToPlayPanel, 4f);
+
+        // Health
+        AddLabel(howToPlayPanel, "── HEALTH ──", 22, FontStyle.Bold, new Color(1f, 0.85f, 0.3f), headSize, f);
+        AddLabel(howToPlayPanel, "Walk over the Firstaid item to restore HP.", 18, FontStyle.Normal, Color.white, lineSize, f);
+        AddLabel(howToPlayPanel, "You start with 100 HP. Zombies deal damage on contact.", 18, FontStyle.Normal, Color.white, lineSize, f);
+        AddSpacer(howToPlayPanel, 4f);
+
+        // Rounds
+        AddLabel(howToPlayPanel, "── ROUNDS ──", 22, FontStyle.Bold, new Color(1f, 0.85f, 0.3f), headSize, f);
+        AddLabel(howToPlayPanel, "Round 1: Zombie wave  |  Round 2: More zombies  |  Round 3: BOSS", 18, FontStyle.Normal, new Color(0.8f, 0.7f, 1f), lineSize, f);
+
+        // Move BackButton to last
+        Transform back = howToPlayPanel.Find("BackButton");
+        if (back != null) back.SetAsLastSibling();
+    }
+
+    void AddLabel(Transform parent, string text, int size, FontStyle style, Color color, Vector2 sz, Font f)
+    {
+        GameObject go = new GameObject("Label");
+        go.transform.SetParent(parent, false);
+        Text t = go.AddComponent<Text>();
+        t.font      = f; t.text = text; t.fontSize = size;
+        t.fontStyle = style; t.color = color;
+        t.alignment = TextAnchor.MiddleCenter;
+        t.horizontalOverflow = HorizontalWrapMode.Wrap;
+        t.verticalOverflow   = VerticalWrapMode.Overflow;
+        t.rectTransform.sizeDelta = sz;
+    }
+
+    void AddSpacer(Transform parent, float h)
+    {
+        GameObject go = new GameObject("Spacer");
+        go.transform.SetParent(parent, false);
+        go.AddComponent<RectTransform>().sizeDelta = new Vector2(10f, h);
     }
 }

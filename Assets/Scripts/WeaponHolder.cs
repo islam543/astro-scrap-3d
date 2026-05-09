@@ -162,27 +162,54 @@ public class WeaponHolder : MonoBehaviour
     /// </summary>
     void FindDefaultWeaponVisual()
     {
-        // The default weapon is a child of Main Camera named "Weapon"
+        if (defaultWeaponVisual != null) return; // already assigned in Inspector
+
+        // First: try the expected child name "Weapon"
         Transform weaponRoot = cameraTransform.Find("Weapon");
+
+        // Fallback: search ALL direct children of the camera for one with a renderer.
+        // Handles the case where the user renamed the default weapon object.
         if (weaponRoot == null)
         {
-            Debug.LogWarning("[WeaponHolder] Could not find 'Weapon' child under Main Camera. " +
-                             "Assign the weapon visual manually if the name differs.");
+            foreach (Transform child in cameraTransform)
+            {
+                if (child.GetComponent<Camera>()      != null) continue;
+                if (child.GetComponent<AudioListener>() != null) continue;
+                if (child.GetComponentInChildren<MeshRenderer>(true) != null)
+                {
+                    weaponRoot = child;
+                    Debug.Log($"[WeaponHolder] Found weapon visual by renderer fallback: '{child.name}'");
+                    break;
+                }
+            }
+        }
+
+        if (weaponRoot == null)
+        {
+            Debug.LogWarning("[WeaponHolder] Could not auto-detect default weapon visual. Assign it manually in the Inspector.");
             return;
         }
 
-        // The weapon visual is the first child that contains a MeshRenderer
+        // Use the root itself if it has a renderer, otherwise use its first child with one
+        if (weaponRoot.GetComponent<MeshRenderer>() != null)
+        {
+            defaultWeaponVisual = weaponRoot.gameObject;
+            Debug.Log($"[WeaponHolder] Default weapon visual: '{weaponRoot.name}'");
+            return;
+        }
+
         foreach (Transform child in weaponRoot)
         {
             if (child.GetComponentInChildren<MeshRenderer>(true) != null)
             {
                 defaultWeaponVisual = child.gameObject;
-                Debug.Log($"[WeaponHolder] Default weapon visual found: '{child.name}'");
+                Debug.Log($"[WeaponHolder] Default weapon visual: '{child.name}'");
                 return;
             }
         }
 
-        Debug.LogWarning("[WeaponHolder] 'Weapon' GO has no child with a MeshRenderer. " +
-                         "The default gun visual won't be hidden on pickup.");
+        // Last resort: use the root GO itself
+        defaultWeaponVisual = weaponRoot.gameObject;
+        Debug.Log($"[WeaponHolder] Default weapon visual (fallback root): '{weaponRoot.name}'");
     }
 }

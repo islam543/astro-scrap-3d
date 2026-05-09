@@ -892,9 +892,6 @@ public class GameManager : MonoBehaviour
         // Stats line (round info)
         CreateText("VictoryStats", content, $"Rounds Survived: 3 / 3", 20, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.6f, 0.8f, 1f), new Vector2(640f, 36f));
 
-        // Buttons
-        CreateButton("RestartButton",      content, "PLAY AGAIN",  RestartScene);
-        CreateButton("VictoryQuitButton",  content, "QUIT TO MENU", GoToMainMenu);
 
         return panel;
     }

@@ -96,6 +96,12 @@ public class CyberMonsterAI : MonoBehaviour
             muzzlePoint = mp.transform;
         }
 
+        // Reset stale triggers so death anim never fires on spawn
+        if (anim != null)
+            foreach (AnimatorControllerParameter p in anim.parameters)
+                if (p.type == AnimatorControllerParameterType.Trigger)
+                    anim.ResetTrigger(p.name);
+
         PlayAnim(ANIM_IDLE);
     }
 
@@ -203,8 +209,7 @@ public class CyberMonsterAI : MonoBehaviour
         if (gunTimer <= 0f)
         {
             gunTimer = gunCooldown;
-            if (anim != null)
-                anim.SetTrigger("Attack");
+            PlayAnim(ANIM_GUN);
             FireBulletAtPlayer();
         }
         else
@@ -269,8 +274,12 @@ public class CyberMonsterAI : MonoBehaviour
 
     void PlayAnim(string stateName)
     {
-        if (anim != null)
-            anim.CrossFade(stateName, 0.15f);
+        if (anim == null) return;
+        // Always reset Die trigger before playing any non-death state
+        // so a queued Die never fires unexpectedly mid-combat
+        if (stateName != ANIM_DEATH)
+            anim.ResetTrigger("Die");
+        anim.CrossFade(stateName, 0.15f);
     }
 
     // ── Called by CyberMonsterHealth ──────────────────────────
